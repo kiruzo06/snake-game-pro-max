@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SNAKE PRO MAX</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SNAKE GAME PRO MAX</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -15,6 +15,13 @@
             --accent: #cddc39;
         }
 
+        * { 
+            touch-action: none; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
         body {
             background-color: #0f1a0f;
             background-image: radial-gradient(#1b301b 1px, transparent 1px);
@@ -22,107 +29,170 @@
             color: #2e1a05;
             font-family: 'Fredoka One', cursive;
             margin: 0;
-            display: flex;
+            display: grid;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             overflow: hidden;
         }
 
         #game-wrapper {
             display: flex;
-            gap: 40px;
+            gap: 20px;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
+            max-width: 100vw;
         }
 
         #canvas-area {
             position: relative;
             background: var(--grass);
-            border: 12px solid var(--wood);
-            border-radius: 30px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+            border: 10px solid var(--wood);
+            border-radius: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
             line-height: 0;
         }
 
-        canvas { display: block; border-radius: 10px; }
+        canvas { 
+            display: block; 
+            border-radius: 12px; 
+            max-width: 90vw; 
+            max-height: 55vh; /* Shrunk slightly to fit legend + controls */
+            height: auto; 
+        }
 
         .sidebar {
-            width: 240px;
+            width: 220px;
             background: var(--paper);
             border: 6px solid var(--wood);
             border-radius: 24px;
-            padding: 25px;
+            padding: 20px;
             box-shadow: 8px 8px 0px rgba(0,0,0,0.4);
         }
 
-        .stat-label { font-size: 12px; color: #8d6e63; text-transform: uppercase; margin: 0; letter-spacing: 1px;}
-        .stat-value { font-size: 38px; color: #2e7d32; margin-bottom: 25px; }
+        .stat-label { font-size: 12px; color: #8d6e63; text-transform: uppercase; margin: 0; }
+        .stat-value { font-size: 34px; color: #2e7d32; margin-bottom: 20px; }
+
+        #legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
         .legend-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-            font-size: 14px;
-            padding: 8px 12px;
-            border-radius: 12px;
-            opacity: 0.7;
-            transition: 0.3s;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 14px; padding: 6px 10px;
+            border-radius: 10px; opacity: 0.4; transition: 0.3s;
+            background: rgba(0,0,0,0.05);
+            border: 2px solid transparent;
         }
 
-        .legend-row.active {
-            opacity: 1;
-            background: #fff;
-            transform: scale(1.1);
-            border: 2px solid var(--row-color);
+        /* When a fruit effect is active */
+        .legend-row.active { 
+            opacity: 1; 
+            background: #fff; 
+            transform: scale(1.05);
+            border-color: var(--row-color);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-        .fruit-dot { width: 14px; height: 14px; border-radius: 50%; }
+        .fruit-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 
         .screen {
-        position: absolute;
-        inset: 0;
-        background: rgba(15, 26, 15, 0.9);
-        backdrop-filter: blur(8px);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 10;
-        color: white;
-        border-radius: 15px;
-        text-align: center;
-        /* ADD THIS LINE */
-        gap: 30px; 
-    }
+            position: absolute; inset: 0;
+            background: rgba(15, 26, 15, 0.9);
+            backdrop-filter: blur(8px);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 10; color: white; border-radius: 15px;
+            text-align: center; gap: 25px; padding: 20px;
+        }
 
         .btn {
-            background: #f57c00;
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 22px;
-            border-radius: 50px;
-            cursor: pointer;
-            border-bottom: 5px solid #bf360c;
+            background: #f57c00; color: white; border: none;
+            padding: 15px 45px; font-size: 24px; border-radius: 50px;
+            cursor: pointer; border-bottom: 5px solid #bf360c;
             font-family: inherit;
         }
 
-        .btn:hover { background: #ff9800; }
+        #controls {
+            display: none;
+            grid-template-areas: 
+                ". up ."
+                "left . right"
+                ". down .";
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .ctrl-btn {
+            width: 70px; height: 70px;
+            background: #5d4037;
+            border: none; border-radius: 20px;
+            color: white; font-size: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-bottom: 6px solid #2e1a05;
+        }
+
+        .ctrl-btn:active { transform: translateY(4px); border-bottom-width: 2px; }
+
+        #up { grid-area: up; } #down { grid-area: down; } #left { grid-area: left; } #right { grid-area: right; }
 
         #effect-toast {
-            position: absolute;
-            top: 30px;
-            width: 100%;
-            text-align: center;
-            font-size: 32px;
-            pointer-events: none;
-            z-index: 5;
+            position: absolute; top: 20px; width: 100%;
+            text-align: center; font-size: 24px;
+            pointer-events: none; z-index: 5;
             text-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
 
         .hidden { display: none !important; }
+
+        /* MOBILE OVERRIDES */
+        @media (max-width: 900px) {
+            body { overflow-y: auto; align-items: flex-start; padding: 10px; }
+            #game-wrapper { flex-direction: column; width: 100%; gap: 10px; }
+            
+            .sidebar { 
+                width: 100%; 
+                display: flex; 
+                flex-direction: column; 
+                padding: 12px; 
+                order: -1; 
+                gap: 10px;
+            }
+
+            .sidebar-stats {
+                display: flex;
+                justify-content: space-around;
+                width: 100%;
+                border-bottom: 2px solid rgba(0,0,0,0.05);
+                padding-bottom: 8px;
+            }
+
+            .stat-value { margin-bottom: 0; font-size: 28px; }
+
+            #legend {
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 5px 0;
+                gap: 2px;
+                -webkit-overflow-scrolling: touch;
+                width: 100%;
+                justify-content: flex-start;
+            }
+
+            /* Hide scrollbar but keep functionality */
+            #legend::-webkit-scrollbar { display: none; }
+
+            .legend-row {
+                flex-shrink: 0;
+                font-size: 11px;
+                padding: 4px 8px;
+                gap: 5px;
+            }
+
+            #controls { display: grid; }
+        }
     </style>
 </head>
 <body>
@@ -133,20 +203,28 @@
         <canvas id="gameCanvas"></canvas>
         
         <div id="start-screen" class="screen">
-            <h1 style="font-size: 50px; margin-bottom: 10px;">SNAKE GAME <span style="color:var(--accent)">PRO MAX</span></h1>
+            <h1 style="font-size: 36px; margin: 0;">SNAKE GAME <span style="color:var(--accent)">PROMAX</span></h1>
             <button class="btn" onclick="startGame()">START</button>
         </div>
 
         <div id="game-over-screen" class="screen hidden">
-            <h1 id="death-msg" style="color: #ff5252; font-size: 36px; margin-bottom: 10px;">CRASHED!</h1>
-            <p id="final-score-txt" style="font-size: 24px; margin-bottom: 30px;">Score: 0</p>
+            <h1 id="death-msg" style="color: #ff5252; font-size: 28px; margin: 0;">CRASHED!</h1>
+            <p id="final-score-txt" style="font-size: 20px; margin: 0;">Score: 0</p>
             <button class="btn" onclick="startGame()">RETRY</button>
         </div>
     </div>
 
     <div class="sidebar">
-        <p class="stat-label">Score</p>
-        <div class="stat-value" id="score">0</div>
+        <div class="sidebar-stats">
+            <div>
+                <p class="stat-label">Score</p>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            <div>
+                <p class="stat-label">Best</p>
+                <div class="stat-value" id="high-score">0</div>
+            </div>
+        </div>
         
         <div id="legend">
             <div class="legend-row" data-type="SPEED" style="--row-color: #ff5252"><div class="fruit-dot" style="background:#ff5252"></div> Frenzy</div>
@@ -156,9 +234,13 @@
             <div class="legend-row" data-type="REVERSE" style="--row-color: #ec407a"><div class="fruit-dot" style="background:#ec407a"></div> Dizzy</div>
             <div class="legend-row" data-type="BOMB" style="--row-color: #212121"><div class="fruit-dot" style="background:#212121"></div> Bomb</div>
         </div>
+    </div>
 
-        <p class="stat-label" style="margin-top:20px">High Score</p>
-        <div class="stat-value" id="high-score" style="font-size: 20px;">0</div>
+    <div id="controls">
+        <div class="ctrl-btn" id="up">▲</div>
+        <div class="ctrl-btn" id="left">◀</div>
+        <div class="ctrl-btn" id="right">▶</div>
+        <div class="ctrl-btn" id="down">▼</div>
     </div>
 </div>
 
@@ -174,8 +256,7 @@
     let snake = [], fruits = [], bombs = [], particles = [];
     let curDir = {x: 1, y: 0}, nextDir = {x: 1, y: 0};
     let isPlaying = false, lastStep = 0;
-    let stepSpeed = 150; // Current actual speed
-    let baseStepSpeed = 150; // Speed determined by score
+    let stepSpeed = 150, baseStepSpeed = 150;
     let activeEffect = null, shake = 0;
 
     const FRUIT_DEFS = {
@@ -186,6 +267,30 @@
         REVERSE: { color: '#ec407a', msg: 'DIZZY...' },
         BOMB: { color: '#212121', msg: 'BOMB PLANTED!' }
     };
+
+    function handleMove(x, y) {
+        let m = {x, y};
+        if (activeEffect === 'REVERSE') { m.x *= -1; m.y *= -1; }
+        if (m.x !== -curDir.x || m.y !== -curDir.y) nextDir = m;
+    }
+
+    // Controls Logic
+    window.addEventListener('keydown', e => {
+        const k = e.key.toLowerCase();
+        if (k === 'arrowup' || k === 'w') handleMove(0, -1);
+        if (k === 'arrowdown' || k === 's') handleMove(0, 1);
+        if (k === 'arrowleft' || k === 'a') handleMove(-1, 0);
+        if (k === 'arrowright' || k === 'd') handleMove(1, 0);
+    });
+
+    function bindButton(id, x, y) {
+        const el = document.getElementById(id);
+        const act = (e) => { e.preventDefault(); handleMove(x, y); };
+        el.addEventListener('mousedown', act);
+        el.addEventListener('touchstart', act, {passive: false});
+    }
+    bindButton('up', 0, -1); bindButton('down', 0, 1);
+    bindButton('left', -1, 0); bindButton('right', 1, 0);
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playSound(type) {
@@ -209,8 +314,7 @@
         let attempts = 0;
         while(attempts < 100) {
             let x = Math.floor(Math.random()*GRID), y = Math.floor(Math.random()*GRID);
-            const occupied = snake.some(s=>s.x===x && s.y===y) || bombs.some(b=>b.x===x && b.y===y);
-            if(!occupied) {
+            if(!snake.some(s=>s.x===x && s.y===y) && !bombs.some(b=>b.x===x && b.y===y)) {
                 const types = Object.keys(FRUIT_DEFS);
                 fruits.push({ x, y, type: types[Math.floor(Math.random()*types.length)], born: Date.now(), life: 10000, eaten: false });
                 return;
@@ -228,6 +332,7 @@
         isPlaying = true;
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
+        document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
         for(let i=0; i<3; i++) spawnFruit();
         lastStep = performance.now();
         requestAnimationFrame(loop);
@@ -249,17 +354,10 @@
         if (activeEffect === 'GHOST') {
             if (head.x < 0) head.x = GRID-1; else if (head.x >= GRID) head.x = 0;
             if (head.y < 0) head.y = GRID-1; else if (head.y >= GRID) head.y = 0;
-        } else {
-            if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) return die("WALL");
-        }
+        } else if (head.x < 0 || head.x >= GRID || head.y < 0 || head.y >= GRID) return die("WALL");
 
         if (snake.some((s,i) => i>0 && s.x === head.x && s.y === head.y)) return die("SELF");
-        
-        let bombIdx = bombs.findIndex(b => b.x === head.x && b.y === head.y);
-        if (bombIdx > -1) {
-            spawnParticles(head.x, head.y, '#ff5722', 40, 12);
-            return die("BOMB");
-        }
+        if (bombs.some(b => b.x === head.x && b.y === head.y)) return die("BOMB");
 
         for(let s of snake) { s.ox = s.x; s.oy = s.y; }
         snake.unshift(head);
@@ -268,15 +366,8 @@
         for(let f of fruits) {
             if (head.x === f.x && head.y === f.y && !f.eaten) {
                 f.eaten = true; ate = true;
-                
-                // SCORE INCREASE FIXED
-                score += 10;
-                document.getElementById('score').innerText = score;
-                
-                // SPEED INCREASE LOGIC
-                // Decreases interval by 3ms for every 10 points, min 60ms
+                score += 10; document.getElementById('score').innerText = score;
                 baseStepSpeed = Math.max(60, 150 - (score / 10) * 3);
-                
                 playSound('eat');
                 applyEffect(f.type);
                 spawnParticles(f.x, f.y, FRUIT_DEFS[f.type].color, 15, 5);
@@ -298,7 +389,6 @@
         toast.style.color = def.color;
         activeEffect = type;
         
-        // Use baseStepSpeed as the foundation for effects
         if (type === 'SPEED') stepSpeed = baseStepSpeed * 0.5;
         else if (type === 'SLOW') stepSpeed = baseStepSpeed * 1.6;
         else stepSpeed = baseStepSpeed;
@@ -307,10 +397,10 @@
         if (type === 'SHRINK' && snake.length > 3) snake = snake.slice(0, Math.floor(snake.length/2)+2);
         
         document.querySelectorAll('.legend-row').forEach(r => r.classList.toggle('active', r.dataset.type === type));
+        
         clearTimeout(window.effT);
         window.effT = setTimeout(() => { 
-            activeEffect = null; 
-            stepSpeed = baseStepSpeed; 
+            activeEffect = null; stepSpeed = baseStepSpeed; 
             toast.innerText = ""; 
             document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
         }, 7000);
@@ -320,10 +410,7 @@
         isPlaying = false; shake = 40;
         playSound('boom');
         const msg = document.getElementById('death-msg');
-        if (reason === "WALL") msg.innerText = "SMACKED THE BORDER!";
-        else if (reason === "SELF") msg.innerText = "OUCH! BIT YOURSELF!";
-        else msg.innerText = "BOOM! BLASTED!";
-        
+        msg.innerText = reason === "WALL" ? "SMACKED THE WALL!" : (reason === "SELF" ? "BIT YOURSELF!" : "BLASTED!");
         if (score > highScore) { highScore = score; localStorage.setItem('snake_wild_v7_hi', score); document.getElementById('high-score').innerText = score;}
         document.getElementById('final-score-txt').innerText = `Score: ${score}`;
         document.getElementById('game-over-screen').classList.remove('hidden');
@@ -342,16 +429,15 @@
         bombs.forEach(b => {
             const x = b.x*TILE+16, y = b.y*TILE+16;
             ctx.fillStyle = '#212121'; ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2); ctx.fill();
-            ctx.fillStyle = '#424242'; ctx.beginPath(); ctx.arc(x-4,y-4,3,0,Math.PI*2); ctx.fill();
             ctx.fillStyle = Math.sin(now/50)>0 ? '#ffeb3b' : '#f44336';
             ctx.beginPath(); ctx.arc(x+12,y-12,Math.random()*4+2,0,Math.PI*2); ctx.fill();
         });
 
         fruits.forEach(f => {
-            const age = now - f.born, remaining = f.life - age;
-            let scale = age < 500 ? age / 500 : (remaining < 1000 ? remaining / 1000 : 1);
+            const age = now - f.born, rem = f.life - age;
+            let sc = age < 500 ? age / 500 : (rem < 1000 ? rem / 1000 : 1);
             const x = f.x*TILE+16, y = f.y*TILE+16 + Math.sin(now/150)*4;
-            ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale);
+            ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc);
             ctx.fillStyle = FRUIT_DEFS[f.type].color; ctx.beginPath(); ctx.arc(0,0,10,0,Math.PI*2); ctx.fill();
             ctx.fillStyle = '#8bc34a'; ctx.beginPath(); ctx.ellipse(4,-9,6,3,Math.PI/4,0,Math.PI*2); ctx.fill();
             ctx.restore();
@@ -364,16 +450,18 @@
             const curX = (s.ox + dx * p) * TILE, curY = (s.oy + dy * p) * TILE;
             ctx.globalAlpha = activeEffect === 'GHOST' ? 0.6 : 1.0;
             ctx.fillStyle = i === 0 ? '#cddc39' : '#8bc34a';
-            const size = TILE-4-(i*0.5);
-            ctx.beginPath(); ctx.roundRect(curX+(TILE-size)/2, curY+(TILE-size)/2, size, size, i===0?12:8); ctx.fill();
+            const sz = TILE-4-(i*0.5);
+            ctx.beginPath(); ctx.roundRect(curX+(TILE-sz)/2, curY+(TILE-sz)/2, sz, sz, i===0?12:8); ctx.fill();
+
             if (i === 0) {
                 const lx = dx || curDir.x, ly = dy || curDir.y;
                 const drawEye = (ox, oy) => {
                     const ex = curX+16+ox, ey = curY+16+oy;
                     ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI*2); ctx.fill();
-                    ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(ex + lx*2, ey + ly*2, 2.5, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = 'black'; ctx.beginPath(); ctx.arc(ex + lx*3, ey + ly*3, 2.5, 0, Math.PI*2); ctx.fill();
                 };
-                if(lx !== 0) { drawEye(lx*8, -7); drawEye(lx*8, 7); } else { drawEye(-7, ly*8); drawEye(7, ly*8); }
+                if(lx !== 0) { drawEye(lx*8, -7); drawEye(lx*8, 7); } 
+                else { drawEye(-7, ly*8); drawEye(7, ly*8); }
             }
         });
 
@@ -394,19 +482,6 @@
             if(particles[i].l <= 0) particles.splice(i,1);
         }
     }
-
-    window.addEventListener('keydown', e => {
-        const k = e.key.toLowerCase();
-        let m = null;
-        if (k === 'arrowup' || k === 'w') m = {x:0, y:-1};
-        else if (k === 'arrowdown' || k === 's') m = {x:0, y:1};
-        else if (k === 'arrowleft' || k === 'a') m = {x:-1, y:0};
-        else if (k === 'arrowright' || k === 'd') m = {x:1, y:0};
-        if (m) {
-            if (activeEffect === 'REVERSE') { m.x *= -1; m.y *= -1; }
-            if (m.x !== -curDir.x || m.y !== -curDir.y) nextDir = m;
-        }
-    });
 </script>
 </body>
 </html>
