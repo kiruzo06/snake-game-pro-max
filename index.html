@@ -57,7 +57,7 @@
             display: block; 
             border-radius: 12px; 
             max-width: 90vw; 
-            max-height: 55vh; /* Shrunk slightly to fit legend + controls */
+            max-height: 55vh; 
             height: auto; 
         }
 
@@ -68,35 +68,11 @@
             border-radius: 24px;
             padding: 20px;
             box-shadow: 8px 8px 0px rgba(0,0,0,0.4);
+            text-align: center;
         }
 
         .stat-label { font-size: 12px; color: #8d6e63; text-transform: uppercase; margin: 0; }
         .stat-value { font-size: 34px; color: #2e7d32; margin-bottom: 20px; }
-
-        #legend {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .legend-row {
-            display: flex; align-items: center; gap: 10px;
-            font-size: 14px; padding: 6px 10px;
-            border-radius: 10px; opacity: 0.4; transition: 0.3s;
-            background: rgba(0,0,0,0.05);
-            border: 2px solid transparent;
-        }
-
-        /* When a fruit effect is active */
-        .legend-row.active { 
-            opacity: 1; 
-            background: #fff; 
-            transform: scale(1.05);
-            border-color: var(--row-color);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-
-        .fruit-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
 
         .screen {
             position: absolute; inset: 0;
@@ -147,7 +123,6 @@
 
         .hidden { display: none !important; }
 
-        /* MOBILE OVERRIDES */
         @media (max-width: 900px) {
             body { overflow-y: auto; align-items: flex-start; padding: 10px; }
             #game-wrapper { flex-direction: column; width: 100%; gap: 10px; }
@@ -156,41 +131,17 @@
                 width: 100%; 
                 display: flex; 
                 flex-direction: column; 
-                padding: 12px; 
+                padding: 10px; 
                 order: -1; 
-                gap: 10px;
             }
 
             .sidebar-stats {
                 display: flex;
                 justify-content: space-around;
                 width: 100%;
-                border-bottom: 2px solid rgba(0,0,0,0.05);
-                padding-bottom: 8px;
             }
 
             .stat-value { margin-bottom: 0; font-size: 28px; }
-
-            #legend {
-                flex-direction: row;
-                overflow-x: auto;
-                padding: 5px 0;
-                gap: 2px;
-                -webkit-overflow-scrolling: touch;
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            /* Hide scrollbar but keep functionality */
-            #legend::-webkit-scrollbar { display: none; }
-
-            .legend-row {
-                flex-shrink: 0;
-                font-size: 11px;
-                padding: 4px 8px;
-                gap: 5px;
-            }
-
             #controls { display: grid; }
         }
     </style>
@@ -203,7 +154,7 @@
         <canvas id="gameCanvas"></canvas>
         
         <div id="start-screen" class="screen">
-            <h1 style="font-size: 36px; margin: 0;">SNAKE GAME <span style="color:var(--accent)">PROMAX</span></h1>
+            <h1 style="font-size: 36px; margin: 0;">SNAKE GAME <span style="color:var(--accent)">PRO MAX</span></h1>
             <button class="btn" onclick="startGame()">START</button>
         </div>
 
@@ -224,15 +175,6 @@
                 <p class="stat-label">Best</p>
                 <div class="stat-value" id="high-score">0</div>
             </div>
-        </div>
-        
-        <div id="legend">
-            <div class="legend-row" data-type="SPEED" style="--row-color: #ff5252"><div class="fruit-dot" style="background:#ff5252"></div> Frenzy</div>
-            <div class="legend-row" data-type="SLOW" style="--row-color: #7c4dff"><div class="fruit-dot" style="background:#7c4dff"></div> Sluggish</div>
-            <div class="legend-row" data-type="GHOST" style="--row-color: #40c4ff"><div class="fruit-dot" style="background:#40c4ff"></div> Spirit</div>
-            <div class="legend-row" data-type="SHRINK" style="--row-color: #ffa726"><div class="fruit-dot" style="background:#ffa726"></div> Shed</div>
-            <div class="legend-row" data-type="REVERSE" style="--row-color: #ec407a"><div class="fruit-dot" style="background:#ec407a"></div> Dizzy</div>
-            <div class="legend-row" data-type="BOMB" style="--row-color: #212121"><div class="fruit-dot" style="background:#212121"></div> Bomb</div>
         </div>
     </div>
 
@@ -264,7 +206,7 @@
         SLOW: { color: '#7c4dff', msg: 'SLUGGISH...' },
         GHOST: { color: '#40c4ff', msg: 'SPIRIT WALK' },
         SHRINK: { color: '#ffa726', msg: 'SHEDDING SKIN' },
-        REVERSE: { color: '#ec407a', msg: 'DIZZY...' },
+        REVERSE: { color: '#FFFACD', msg: 'DIZZY...' },
         BOMB: { color: '#212121', msg: 'BOMB PLANTED!' }
     };
 
@@ -274,7 +216,6 @@
         if (m.x !== -curDir.x || m.y !== -curDir.y) nextDir = m;
     }
 
-    // Controls Logic
     window.addEventListener('keydown', e => {
         const k = e.key.toLowerCase();
         if (k === 'arrowup' || k === 'w') handleMove(0, -1);
@@ -332,7 +273,6 @@
         isPlaying = true;
         document.getElementById('start-screen').classList.add('hidden');
         document.getElementById('game-over-screen').classList.add('hidden');
-        document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
         for(let i=0; i<3; i++) spawnFruit();
         lastStep = performance.now();
         requestAnimationFrame(loop);
@@ -396,13 +336,10 @@
         if (type === 'BOMB') bombs.push({x: Math.floor(Math.random()*GRID), y: Math.floor(Math.random()*GRID), born: Date.now()});
         if (type === 'SHRINK' && snake.length > 3) snake = snake.slice(0, Math.floor(snake.length/2)+2);
         
-        document.querySelectorAll('.legend-row').forEach(r => r.classList.toggle('active', r.dataset.type === type));
-        
         clearTimeout(window.effT);
         window.effT = setTimeout(() => { 
             activeEffect = null; stepSpeed = baseStepSpeed; 
             toast.innerText = ""; 
-            document.querySelectorAll('.legend-row').forEach(r => r.classList.remove('active'));
         }, 7000);
     }
 
